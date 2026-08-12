@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  PARTIALLY_COMPLETED
+  MISSED
+}
+
+enum CheckInStatus {
+  PENDING
+  COMPLETED
+}
+
+enum ActivityStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+  MISSED
+}
+
+enum CheckoutStatus {
+  PENDING
+  COMPLETED
+}
+
+enum ReminderType {
+  CHECK_IN
+  ACTIVITY
+  CHECKOUT_WARNING
+  CHECKOUT
+  STAYING
+}
+
+enum ReminderStatus {
+  UPCOMING
+  PENDING
+  COMPLETED
+  SKIPPED
+  MISSED
+  SNOOZED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model User {
+  id                String             @id @default(cuid())
+  name              String
+  email             String             @unique
+  passwordHash      String
+  schedule          UserSchedule?
+  sessions          DailySession[]
+  reminders         Reminder[]
+  notificationTokens NotificationToken[]
+  assistantMessages AssistantMessage[]
+  activityPhotos    ActivityPhoto[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model UserSchedule {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startTime              String
+  endTime                String
+  photoIntervalMinutes   Int
+  checkoutWarningMinutes Int
+  timezone               String   @default("Asia/Kolkata")
+  monday                 Boolean  @default(true)
+  tuesday                Boolean  @default(true)
+  wednesday              Boolean  @default(true)
+  thursday               Boolean  @default(true)
+  friday                 Boolean  @default(true)
+  saturday               Boolean  @default(false)
+  sunday                 Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model DailySession {
+  id                  String         @id @default(cuid())
+  userId              String
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date                DateTime       @db.Date
+  scheduledStart      String
+  scheduledEnd        String
+  checkInStatus       CheckInStatus  @default(PENDING)
+  checkInCompletedAt  DateTime?
+  checkoutStatus      CheckoutStatus @default(PENDING)
+  checkoutCompletedAt DateTime?
+  totalMinutes        Int?
+  status              SessionStatus  @default(UPCOMING)
+  reminders           Reminder[]
+  confirmations       ActivityConfirmation[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model Reminder {
+  id           String          @id @default(cuid())
+  sessionId    String
+  session      DailySession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         ReminderType
+  scheduledAt  DateTime
+  status       ReminderStatus  @default(UPCOMING)
+  completedAt  DateTime?
+  snoozedUntil DateTime?
+  confirmation ActivityConfirmation?
+  createdAt    DateTime        @default(now())
+  @@index([userId, scheduledAt])
+}
+
+model ActivityConfirmation {
+  id          String         @id @default(cuid())
+  reminderId  String         @unique
+  reminder    Reminder       @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  sessionId   String
+  session     DailySession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId      String
+  completedAt DateTime       @default(now())
+  status      ActivityStatus @default(COMPLETED)
+  photo       ActivityPhoto?
+  @@index([sessionId])
+}
+
+model ActivityPhoto {
+  id                     String               @id @default(cuid())
+  activityConfirmationId String               @unique
+  activityConfirmation   ActivityConfirmation @relation(fields: [activityConfirmationId], references: [id], onDelete: Cascade)
+  userId                 String
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageUrl               String
+  createdAt              DateTime             @default(now())
+}
+
+model NotificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AssistantMessage {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      MessageRole
+  message   String      @db.Text
+  createdAt DateTime    @default(now())
+  @@index([userId, createdAt])
+}

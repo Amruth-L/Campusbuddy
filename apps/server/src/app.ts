@@ -1,0 +1,6 @@
+import cors from 'cors'; import express from 'express'; import helmet from 'helmet'; import rateLimit from 'express-rate-limit';
+import { env } from './config/env.js'; import { errorHandler } from './middleware/error-handler.js'; import { authRouter } from './modules/auth/auth.routes.js'; import { scheduleRouter } from './modules/schedule/schedule.routes.js'; import { sessionRouter } from './modules/sessions/session.routes.js'; import { reminderRouter } from './modules/reminders/reminder.routes.js'; import { assistantRouter } from './modules/assistant/assistant.routes.js'; import { statsRouter } from './modules/stats/stats.routes.js';
+export const app = express();
+app.use(helmet()); app.use(cors({ origin: env.CORS_ORIGIN })); app.use(express.json({ limit: '10mb' })); app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: 'draft-8', legacyHeaders: false }));
+app.get('/health', (_request, response) => response.json({ status: 'ok' })); app.use('/api/auth', authRouter); app.use('/api/schedule', scheduleRouter); app.use('/api/sessions', sessionRouter); app.use('/api/reminders', reminderRouter); app.use('/api/assistant', assistantRouter); app.use('/api/stats', statsRouter); app.use(errorHandler);
+

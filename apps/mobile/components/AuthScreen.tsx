@@ -1,0 +1,8 @@
+import { PropsWithChildren } from 'react';
+import { Text, StyleSheet, View } from 'react-native';
+import { Screen } from '@/components/Screen';
+import { useTheme } from '@/providers/ThemeProvider';
+
+export function AuthScreen({ title, subtitle, children }: PropsWithChildren<{ title: string; subtitle: string }>) { const theme = useTheme(); return <Screen><View style={styles.brand}><View style={[styles.mark, { backgroundColor: theme.primary }]}><Text style={{ color: theme.background, fontWeight: '800', fontSize: 22 }}>C</Text></View><Text style={[styles.brandText, { color: theme.text }]}>CampusLife Buddy</Text></View><Text style={[styles.title, { color: theme.text }]}>{title}</Text><Text style={[styles.subtitle, { color: theme.secondary }]}>{subtitle}</Text><View style={styles.content}>{children}</View></Screen>; }
+export const authStyles = StyleSheet.create({ field: { gap: 7 }, label: { fontSize: 14, fontWeight: '700' }, input: { minHeight: 50, borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, fontSize: 16 }, link: { fontSize: 14, fontWeight: '700', textAlign: 'center' }, helper: { fontSize: 13, lineHeight: 19, textAlign: 'center' } });
+const styles = StyleSheet.create({ brand: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20, marginBottom: 52 }, mark: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' }, brandText: { fontWeight: '800', fontSize: 15 }, title: { fontSize: 30, letterSpacing: -0.5, fontWeight: '800' }, subtitle: { fontSize: 16, lineHeight: 23, marginTop: 9 }, content: { marginTop: 32, gap: 18 } });

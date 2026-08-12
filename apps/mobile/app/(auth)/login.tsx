@@ -1,0 +1,5 @@
+import { Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
+import { AuthScreen, authStyles } from '@/components/AuthScreen';
+import { Button } from '@/components/Button'; import { useTheme } from '@/providers/ThemeProvider';
+export default function Login() { const theme = useTheme(); const field = (label: string, password = false) => <View style={authStyles.field}><Text style={[authStyles.label, { color: theme.text }]}>{label}</Text><TextInput accessibilityLabel={label} secureTextEntry={password} autoCapitalize="none" style={[authStyles.input, { color: theme.text, borderColor: theme.border }]} /></View>; return <AuthScreen title="Welcome back" subtitle="Sign in to keep your Campus Life routine on track.">{field('Email')}{field('Password', true)}<Text onPress={() => router.push('/(auth)/forgot-password')} style={[authStyles.link, { color: theme.text }]}>Forgot password?</Text><Button label="Sign in" onPress={() => router.replace('/(tabs)')} /><Text onPress={() => router.replace('/(auth)/register')} style={[authStyles.link, { color: theme.text }]}>New here? Create an account</Text></AuthScreen>; }

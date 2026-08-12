@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "CampusLife Buddy",
+    "slug": "campuslife-buddy",
+    "scheme": "campuslifebuddy",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "bundleIdentifier": "com.campuslifebuddy.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.campuslifebuddy.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
