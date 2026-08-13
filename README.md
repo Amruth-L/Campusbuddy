@@ -4,45 +4,47 @@ CampusLife Buddy is a native mobile reminder assistant for students using the of
 
 ## Current status
 
-Phases 1–3 are implemented: Expo Router navigation, a focused black-and-white design system, onboarding, authentication screens, a secure Express/Prisma authentication API, and timezone-aware schedule/session/reminder APIs. Local mobile notification scheduling is next.
+Phases 1–3 are fully implemented: Expo Router navigation, black-and-white design system, onboarding, authentication screens, a secure Express/Prisma authentication API, timezone-aware schedule/session/reminder APIs, local mobile notification scheduling for reminders (`expo-notifications`), and camera activity photo scanning (`expo-image-picker`).
+
+## Hosting & Deployment
+
+For complete, step-by-step instructions on hosting the backend server on Render/Railway, deploying the web app on Vercel, and building mobile APK/iOS binaries using EAS, see the [HOSTING.md](file:///Users/amruth/Desktop/campusbudy/HOSTING.md) guide.
 
 ## Structure
 
 ```text
 apps/mobile     Expo + React Native application
-apps/server     Express API (Phase 2)
-packages/shared Shared types and business rules (Phase 2)
-prisma          Database schema and migrations (Phase 2)
-docs            Architecture and deployment documentation
+apps/server     Express API
+packages/shared Shared types and business rules
+prisma          Database schema and migrations
+HOSTING.md      Complete hosting & deployment instructions
 ```
 
 ## Run the mobile app
 
 ```bash
 npm install
-cd apps/mobile
-npx expo start
+npm --workspace @campuslife/mobile run start
+# Or for Web:
+npm --workspace @campuslife/mobile run web
 ```
-
-Create `apps/mobile/.env` from the root `.env.example` when the API is available.
 
 ## Run the API
 
 Set `DATABASE_URL`, `JWT_SECRET`, and `CORS_ORIGIN` in `apps/server/.env`, then run:
 
 ```bash
-npx prisma generate --schema prisma/schema.prisma
-npx prisma migrate dev --schema prisma/schema.prisma
-npm run dev:server
+npm --workspace @campuslife/server run prisma:generate
+npm --workspace @campuslife/server run dev
 ```
 
-## EAS builds
+## EAS builds & Hosting
+
+See [HOSTING.md](file:///Users/amruth/Desktop/campusbudy/HOSTING.md) for full instructions:
 
 ```bash
 eas login
 eas build:configure
-eas build --platform android
-eas build --platform ios
+eas build --platform android --profile preview
 ```
 
-iOS distribution requires an appropriately configured Apple Developer account.
