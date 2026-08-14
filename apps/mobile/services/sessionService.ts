@@ -2,17 +2,70 @@ import type { DailySession, Reminder } from '@/types/session';
 import { api } from './api';
 import { addPendingAction, getCache, KEYS, setCache } from './offlineStore';
 
+function createDefaultSession(): DailySession {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const startAt = new Date(now);
+  startAt.setHours(9, 15, 0, 0);
+  const endAt = new Date(now);
+  endAt.setHours(16, 45, 0, 0);
+  const actAt = new Date(now);
+  actAt.setHours(13, 0, 0, 0);
+
+  return {
+    id: `local_session_${todayStr}`,
+    userId: 'local_user',
+    date: todayStr,
+    scheduledStart: '09:15',
+    scheduledEnd: '16:45',
+    status: 'UPCOMING',
+    checkInStatus: 'PENDING',
+    checkoutStatus: 'PENDING',
+    reminders: [
+      {
+        id: `rem_checkin_${todayStr}`,
+        sessionId: `local_session_${todayStr}`,
+        userId: 'local_user',
+        type: 'CHECK_IN',
+        scheduledAt: startAt.toISOString(),
+        status: 'UPCOMING',
+      },
+      {
+        id: `rem_act_${todayStr}`,
+        sessionId: `local_session_${todayStr}`,
+        userId: 'local_user',
+        type: 'ACTIVITY',
+        scheduledAt: actAt.toISOString(),
+        status: 'PENDING',
+      },
+      {
+        id: `rem_checkout_${todayStr}`,
+        sessionId: `local_session_${todayStr}`,
+        userId: 'local_user',
+        type: 'CHECKOUT',
+        scheduledAt: endAt.toISOString(),
+        status: 'UPCOMING',
+      },
+    ],
+  };
+}
+
 export async function fetchTodaySession(): Promise<DailySession | null> {
   try {
     const res = await api<{ session: DailySession | null }>('/sessions/today');
     if (res?.session) {
       await setCache(KEYS.TODAY_SESSION, res.session);
+      return res.session;
     }
-    return res?.session ?? null;
   } catch {
-    // Fallback to local cache
-    return getCache<DailySession>(KEYS.TODAY_SESSION);
+    // API unavailable or unauthenticated -> check local cache
   }
+  const cached = await getCache<DailySession>(KEYS.TODAY_SESSION);
+  if (cached) return cached;
+
+  const defaultSess = createDefaultSession();
+  await setCache(KEYS.TODAY_SESSION, defaultSess);
+  return defaultSess;
 }
 
 export async function checkInSession(sessionId: string): Promise<DailySession | null> {
@@ -20,21 +73,23 @@ export async function checkInSession(sessionId: string): Promise<DailySession | 
     const res = await api<{ session: DailySession }>(`/sessions/${sessionId}/check-in`, { method: 'POST' });
     if (res?.session) {
       await setCache(KEYS.TODAY_SESSION, res.session);
+      return res.session;
     }
-    return res.session;
   } catch {
-    // Queue offline action & update local cache
-    await addPendingAction({ type: 'CHECK_IN', targetId: sessionId });
-    const cached = await getCache<DailySession>(KEYS.TODAY_SESSION);
-    if (cached) {
-      cached.checkInStatus = 'COMPLETED';
-      cached.checkInCompletedAt = new Date().toISOString();
-      cached.status = 'ACTIVE';
-      await setCache(KEYS.TODAY_SESSION, cached);
-      return cached;
-    }
-    return null;
+    // Offline / fallback handling
   }
+  await addPendingAction({ type: 'CHECK_IN', targetId: sessionId });
+  let cached = await getCache<DailySession>(KEYS.TODAY_SESSION);
+  if (!cached) {
+    cached = createDefaultSession();
+  }
+  cached.checkInStatus = 'COMPLETED';
+  cached.checkInCompletedAt = new Date().toISOString();
+  cached.status = 'ACTIVE';
+  const checkInRem = cached.reminders.find((r) => r.type === 'CHECK_IN');
+  if (checkInRem) checkInRem.status = 'COMPLETED';
+  await setCache(KEYS.TODAY_SESSION, cached);
+  return cached;
 }
 
 export async function checkoutSession(sessionId: string): Promise<DailySession | null> {
@@ -42,20 +97,21 @@ export async function checkoutSession(sessionId: string): Promise<DailySession |
     const res = await api<{ session: DailySession }>(`/sessions/${sessionId}/checkout`, { method: 'POST' });
     if (res?.session) {
       await setCache(KEYS.TODAY_SESSION, res.session);
+      return res.session;
     }
-    return res.session;
   } catch {
-    await addPendingAction({ type: 'CHECKOUT', targetId: sessionId });
-    const cached = await getCache<DailySession>(KEYS.TODAY_SESSION);
-    if (cached) {
-      cached.checkoutStatus = 'COMPLETED';
-      cached.checkoutCompletedAt = new Date().toISOString();
-      cached.status = cached.checkInStatus === 'COMPLETED' ? 'COMPLETED' : 'PARTIALLY_COMPLETED';
-      await setCache(KEYS.TODAY_SESSION, cached);
-      return cached;
-    }
-    return null;
+    // Fallback
   }
+  await addPendingAction({ type: 'CHECKOUT', targetId: sessionId });
+  let cached = await getCache<DailySession>(KEYS.TODAY_SESSION);
+  if (!cached) cached = createDefaultSession();
+  cached.checkoutStatus = 'COMPLETED';
+  cached.checkoutCompletedAt = new Date().toISOString();
+  cached.status = cached.checkInStatus === 'COMPLETED' ? 'COMPLETED' : 'PARTIALLY_COMPLETED';
+  const checkoutRem = cached.reminders.find((r) => r.type === 'CHECKOUT');
+  if (checkoutRem) checkoutRem.status = 'COMPLETED';
+  await setCache(KEYS.TODAY_SESSION, cached);
+  return cached;
 }
 
 export async function completeReminder(reminderId: string): Promise<Reminder | null> {
