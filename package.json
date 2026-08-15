@@ -1,11 +1,18 @@
 {
   "name": "campuslife-buddy",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev:mobile": "npm --workspace @campuslife/mobile run start",
     "dev:server": "npm --workspace @campuslife/server run dev",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
+  },
+  "dependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   }
 }
